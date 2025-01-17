@@ -1,0 +1,12 @@
+{
+    "word_list" : [
+        { "word" : "바나나", "image" : "바나나.jpg"},
+        { "word" : "사과", "image" : "사과.jpg"},
+        { "word" : "오렌지", "image" : "오렌지.jpg"},
+        { "word" : "포도", "image" : "포도.jpg"},
+        { "word" : "딸기", "image" : "딸기.jpg"},
+        { "word" : "파인애플", "image" : "파인애플.jpg"},
+        { "word" : "수박", "image" : "수박.jpg"},
+        { "word" : "블루베리", "image" : "블루베리.jpg"}
+    ]
+}
