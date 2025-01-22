@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { invoke } from "@tauri-apps/api/core";
+import { useRouter } from "vue-router";
+import MessageBox from './MessageBox.vue';
+
+const messageBox = ref();
+const idDev = ref(import.meta.env.MODE === 'development');
 
 interface WordProblem {
   problem : string,
@@ -9,43 +14,94 @@ interface WordProblem {
 
 let word_problem = ref<WordProblem | null>(null);
 const image_path = ref<string>("");
+const router = useRouter();
+const showSubMenu = ref<boolean>(false);
 
-async function GetImage() {
-  word_problem.value = await invoke("get_words_from_file");
+const navigateTo = (path : string) => {
+  router.push(path);
 }
 
-async function GetImagePath() {
-  image_path.value = await invoke("get_file_env");
+const toggleSubMenu = () => {
+  showSubMenu.value = !showSubMenu.value;
+}
+
+const category = ref("fruit");
+
+async function GetImage(target: string) {
+  word_problem.value = await invoke("get_words_from_file", { target : target });
+}
+
+async function GetImagePath(target: string) {
+  image_path.value = await invoke("get_file_env", { target: target});
 }
 
 async function ImageClickEvnetHandler(image_path : string | undefined) {
   const answer = image_path?.split('.')[0];
   if (answer === word_problem.value?.problem) {
-    alert('정답입니다');
-    GetImage();
+    showAlert('정답여부', '정답입니다.\r\n다음 문제로 넘어갑니다.');
+    GetImage(category.value);
   } else {
-    alert('틀렸습니다.');
+    showAlert('정답여부', '틀렸습니다.\r\n다시 시도하세요');
   }
 }
 
-GetImagePath();
+function showAlert(title: string, message: string) {
+  console.log(messageBox.value);
+  messageBox.value?.show_alert(title, message);
+}
+
+function change_category(text : string) {
+  category.value = text;
+  GetImagePath(category.value);
+}
+
+GetImagePath(category.value);
 
 </script>
 
 <template>
   <div class="container">
     <div class="top-panel">
-      <button @click="GetImage">다음</button>
-
+      <button v-if="idDev" @click="showAlert('알림', '테스트')">Test</button>
+      <button v-if="idDev" @click="change_category('family')">Content</button>
+      <button @click="GetImage(category)">다음</button>
     </div>
 
     <div class="main-container">
       <!-- 사이드 패널 -->
       <div class="side-panel">
-        
+        <ul class="menu">
+          <li class="menu-item" @click="toggleSubMenu()">낱말 맞추기</li>
+          <transition name="fade">
+            <ul v-if="showSubMenu" class="sub-menu">
+              <li class="sub-menu-item" @click="navigateTo('/SubMenu1')">과일</li>
+              <li class="sub-menu-item" @click="navigateTo('/SubMenu2')">가족</li>
+            </ul>
+          </transition>
+          <li class="menu-item" @click="navigateTo('/Content')">Profile</li>
+          <transition name="fade">
+            <ul v-if="showSubMenu" class="sub-menu">
+              <li class="sub-menu-item" @click="navigateTo('/SubMenu1')">과일</li>
+              <li class="sub-menu-item" @click="navigateTo('/SubMenu2')">가족</li>
+            </ul>
+          </transition>
+          <li class="menu-item" @click="navigateTo('/Settings')">Settings</li>
+          <transition name="fade">
+            <ul v-if="showSubMenu" class="sub-menu">
+              <li class="sub-menu-item" @click="navigateTo('/SubMenu1')">과일</li>
+              <li class="sub-menu-item" @click="navigateTo('/SubMenu2')">가족</li>
+            </ul>
+          </transition>
+          <li class="menu-item" @click="navigateTo('/Help')">Help</li>
+          <transition name="fade">
+            <ul v-if="showSubMenu" class="sub-menu">
+              <li class="sub-menu-item" @click="navigateTo('/SubMenu1')">과일</li>
+              <li class="sub-menu-item" @click="navigateTo('/SubMenu2')">가족</li>
+            </ul>
+          </transition>
+          
+        </ul>
       </div>
-      
-
       <div class="content-panel"> 
         <!-- main panel -->
         <div class="main-panel">
@@ -60,10 +116,13 @@ GetImagePath();
         <!-- bottom panel -->
         <div class="bottom-panel">
           <p>{{ word_problem?.problem }}</p>
+          <router-view></router-view>
         </div>
 
       </div>
     </div>
+
+    <MessageBox ref="messageBox"/>
   </div>
   
 </template>
@@ -98,7 +157,49 @@ html, body {
 
 .side-panel {
   width: 20%;
-  background-color: black;
+  background-color: cornsilk;
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: flex;
+  border-radius: 15px;
+}
+
+.side-panel li {
+  color: black;
+}
+
+.menu {
+  list-style-type: none;
+  padding: 0;
+}
+
+.menu-item {
+  padding: 15px 0;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.menu-item:hover {
+  background-color: antiquewhite;
+}
+
+.sub-menu {
+  list-style-type: none;
+  padding: 0;
+  /* margin-left: 20px; */
+}
+
+.sub-menu-item {
+  padding: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  display: flex;
+  align-items: center;
+}
+
+.sub-menu-item:hover {
+  background-color: grey;
 }
 
 .top-panel {
@@ -153,11 +254,12 @@ html, body {
 .image-container img {
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
   cursor: pointer;
 }
 
 .bottom-panel {
+  background-color: white;
   display: flex;
   justify-content: center;
   align-items: center;

@@ -1,4 +1,4 @@
-use std::clone;
+use std::{clone, fmt::format};
 
 use serde::{Deserialize, Serialize};
 use tauri::ipc::private::ResponseKind;
@@ -37,18 +37,24 @@ struct WordProblem {
     problem_images : Vec<String>
 }
 
+// 매개변수로 낱말인지 뭔지를 받아와야할듯,,?
+
+
 // 반환하는 인터페이스를 만들면 좋을 듯
 #[tauri::command]
-fn get_words_from_file() -> WordProblem{
+fn get_words_from_file(target : String) -> WordProblem{
+
     let mut data = String::new();
     #[cfg(debug_assertions)]
     {
-        data = std::fs::read_to_string("./assets/words.json").expect("fail");
+        let path = format!("./assets/{}.json", target);
+        data = std::fs::read_to_string(path.as_str()).expect("fail");
     }
 
     #[cfg(not(debug_assertions))]
     {
-        data = std::fs::read_to_string("words.json").expect("fail");
+        let path = format!("{}.json", target);
+        data = std::fs::read_to_string(path.as_str()).expect("fail");
     }
     
     let word_game_container: WordGameContainer = serde_json::from_str(&data).expect("fail");
@@ -73,20 +79,21 @@ fn get_words_from_file() -> WordProblem{
 }
 
 #[tauri::command]
-fn get_file_env() -> String {
+fn get_file_env(target: String) -> String {
     let mut path = String::new();
     #[cfg(debug_assertions)]
     {
         // image : /src-tauri/assets/images/
         println!("디버깅 모드입니다.");
-        path = "/src-tauri/assets/images/".to_string();
-
+        path = format!("/src-tauri/assets/images/{}/", target);
+        // path = "/src-tauri/assets/images/".to_string();
     }
 
     #[cfg(not(debug_assertions))]
     {
         println!("릴리즈 모드입니다.");
-        path = "./images/".to_string();
+        path = format!("./images/{}/", target);
+        // path = "./images/".to_string();
     }
 
     // let path = std::env::current_exe().unwrap().to_string_lossy().to_string();
