@@ -15,14 +15,19 @@ interface WordProblem {
 let word_problem = ref<WordProblem | null>(null);
 const image_path = ref<string>("");
 const router = useRouter();
-const showSubMenu = ref<boolean>(false);
+const word_quiz_menu_toggle = ref(false);
+const void_record_menu_toggle = ref(false);
+
+function toggle_word_quiz_menu() {
+  word_quiz_menu_toggle.value = !word_quiz_menu_toggle.value;
+}
+
+function toggle_voice_record_menu() {
+  void_record_menu_toggle.value = !void_record_menu_toggle.value;
+}
 
 const navigateTo = (path : string) => {
   router.push(path);
-}
-
-const toggleSubMenu = () => {
-  showSubMenu.value = !showSubMenu.value;
 }
 
 const category = ref("fruit");
@@ -50,9 +55,11 @@ function showAlert(title: string, message: string) {
   messageBox.value?.show_alert(title, message);
 }
 
-function change_category(text : string) {
+function change_category(path : string,text : string) {
+  console.log(`change_category clicked, {text}`);
+  console.log(text);
   category.value = text;
-  GetImagePath(category.value);
+  router.push({ path: `/${path}/${text}`});
 }
 
 GetImagePath(category.value);
@@ -61,63 +68,47 @@ GetImagePath(category.value);
 
 <template>
   <div class="container">
-    <div class="top-panel">
+    <!-- <div class="top-panel">
       <button v-if="idDev" @click="showAlert('알림', '테스트')">Test</button>
       <button v-if="idDev" @click="change_category('family')">Content</button>
       <button @click="GetImage(category)">다음</button>
-    </div>
+    </div> -->
 
     <div class="main-container">
-      <!-- 사이드 패널 -->
-      <div class="side-panel">
-        <ul class="menu">
-          <li class="menu-item" @click="toggleSubMenu()">낱말 맞추기</li>
-          <transition name="fade">
-            <ul v-if="showSubMenu" class="sub-menu">
-              <li class="sub-menu-item" @click="navigateTo('/SubMenu1')">과일</li>
-              <li class="sub-menu-item" @click="navigateTo('/SubMenu2')">가족</li>
-            </ul>
-          </transition>
-          <li class="menu-item" @click="navigateTo('/Content')">Profile</li>
-          <transition name="fade">
-            <ul v-if="showSubMenu" class="sub-menu">
-              <li class="sub-menu-item" @click="navigateTo('/SubMenu1')">과일</li>
-              <li class="sub-menu-item" @click="navigateTo('/SubMenu2')">가족</li>
-            </ul>
-          </transition>
-          <li class="menu-item" @click="navigateTo('/Settings')">Settings</li>
-          <transition name="fade">
-            <ul v-if="showSubMenu" class="sub-menu">
-              <li class="sub-menu-item" @click="navigateTo('/SubMenu1')">과일</li>
-              <li class="sub-menu-item" @click="navigateTo('/SubMenu2')">가족</li>
-            </ul>
-          </transition>
-          <li class="menu-item" @click="navigateTo('/Help')">Help</li>
-          <transition name="fade">
-            <ul v-if="showSubMenu" class="sub-menu">
-              <li class="sub-menu-item" @click="navigateTo('/SubMenu1')">과일</li>
-              <li class="sub-menu-item" @click="navigateTo('/SubMenu2')">가족</li>
-            </ul>
-          </transition>
-          
-        </ul>
+      <div class="side-menu">
+        <div class="side-menu-element" @click="toggle_word_quiz_menu">
+          <p>낱말 퀴즈</p>
+        </div>
+        <div v-if="word_quiz_menu_toggle" class="sub-menu">
+          <p @click="change_category('WordQuiz','fruit')">과일</p>
+          <p @click="change_category('WordQuiz', 'family')">가족</p>
+        </div>
+        <div class="side-menu-element" @click="toggle_voice_record_menu">
+          <p>단어 말하기 연습</p>
+        </div>
+        <div v-if="void_record_menu_toggle" class="sub-menu">
+          <p @click="change_category('VoiceRecord', 'fruit')">과일</p>
+          <p @click="change_category('VoiceRecord', 'family')">가족</p>
+          <!-- <p @click="change_category('VoiceRecord', '한글')">한글</p> -->
+        </div>
       </div>
+
       <div class="content-panel"> 
+        <router-view></router-view>
         <!-- main panel -->
-        <div class="main-panel">
+        <!-- <div class="main-panel">
           <div class="image-container">
             <img :src="image_path + word_problem?.problem_images[0]" alt="image" @click="ImageClickEvnetHandler(word_problem?.problem_images[0])">
           </div>
           <div class="image-container">
             <img :src="image_path + word_problem?.problem_images[1]" alt="image" @click="ImageClickEvnetHandler(word_problem?.problem_images[1])">
           </div>
-        </div>
+        </div> -->
 
         <!-- bottom panel -->
-        <div class="bottom-panel">
+        <!-- <div class="bottom-panel">
           <p>{{ word_problem?.problem }}</p>
-          <router-view></router-view>
-        </div>
+        </div> -->
 
       </div>
     </div>
@@ -155,51 +146,52 @@ html, body {
   flex: 1;
 }
 
-.side-panel {
-  width: 20%;
-  background-color: cornsilk;
-  color: white;
+.side-menu {
+  display: flex;
+  flex-direction: column;
+  background-color: #dcdcdc;
+  width: 150px;
+  padding: 20px;
+}
+
+.side-menu-element {
+  width: 100%;
+  height: 50px;
+  background-color: #dcdcdc;
   display: flex;
   justify-content: center;
-  align-items: flex;
-  border-radius: 15px;
-}
-
-.side-panel li {
-  color: black;
-}
-
-.menu {
-  list-style-type: none;
-  padding: 0;
-}
-
-.menu-item {
-  padding: 15px 0;
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
-
-.menu-item:hover {
-  background-color: antiquewhite;
-}
-
-.sub-menu {
-  list-style-type: none;
-  padding: 0;
-  /* margin-left: 20px; */
-}
-
-.sub-menu-item {
-  padding: 5px;
-  cursor: pointer;
-  transition: background-color 0.3s;
-  display: flex;
   align-items: center;
 }
 
-.sub-menu-item:hover {
-  background-color: grey;
+.side-menu-element:hover {
+  background-color: aquamarine;
+  cursor: pointer;
+}
+
+.side-menu-element p {
+  font-size: 20px;
+  color: gray;
+}
+
+.sub-menu {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.sub-menu p {
+  font-size: 15px;
+  width: 100px;
+  height: 50px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.sub-menu p:hover {
+  background-color: aqua;
+  cursor: pointer;
 }
 
 .top-panel {
@@ -232,7 +224,7 @@ html, body {
   display: flex;
   flex-direction: column;
   flex: 1;
-  background-color: #4CAF50;
+  background-color: whitesmoke;
 }
 
 .image-container {

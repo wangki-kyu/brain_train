@@ -1,17 +1,17 @@
 import { createWebHistory, createRouter, RouteRecordRaw } from "vue-router";
-import Test from "@/Test.vue";
-import Content from "@/Content.vue";
+import WordQuiz from "@/WordQuiz.vue";
+import VoiceRecord from "@/VoiceRecord.vue";
 
 const routes: RouteRecordRaw[] = [
     {
-        path : "/Test",
-        name: "Test",
-        component: Test,
+        path : "/WordQuiz/:category+",
+        name: "WordQuiz",
+        component: WordQuiz,
     },
     {
-        path : "/Content",
-        name: "Content",
-        component: Content,
+        path : "/VoiceRecord/:category+",
+        name: "VoiceRecord",
+        component: VoiceRecord,
     },
 ]
 
