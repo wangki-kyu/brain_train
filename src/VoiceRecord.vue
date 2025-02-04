@@ -2,6 +2,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
+import MessageBox from './MessageBox.vue';
 
 const is_record = ref(false);
 const route = useRoute();
@@ -10,6 +11,8 @@ const word_list = ref<string[] | null>(null);
 const show_word = ref("");
 const word_index = ref(0);
 const is_playing = ref(false);
+const message_box = ref();
+const idDev = ref(import.meta.env.MODE === 'development');
 
 function toggle_record() {
     // 녹음 하기 
@@ -65,10 +68,9 @@ async function pause_record() {
     console.log("record pause");
 }
 
-async function test_func()  {
-    await invoke("test_func");
-    console.log("test func called");
-}
+// async function test_func()  {
+//     await invoke("test_func")
+// }
 
 async function stream_record() {
     is_playing.value = true;
@@ -90,6 +92,12 @@ function handleSpacebar(event: KeyboardEvent) {
         console.log('Spacebar pressed');
         toggle_record();
     }
+}
+
+async function async_test() {
+    const temp = await invoke("async_test");
+    console.log(temp);
+    alert('처리되었습니다 ' + temp);
 }
 
 onMounted(async () => {
@@ -114,9 +122,11 @@ onBeforeUnmount(() => {
     <div class="conatiner">
         <div class="top-panel">
             <button @click="show_next_word">다음</button>
+            <button v-if="idDev" @click="async_test">test button</button>
         </div>
         <div class="top-content">
             <p @click="speak_tts(show_word)">{{ show_word }}</p>
+            <!-- <img src="D:\work\rust\brain-train\src-tauri\target\release\images\family\김우준.jpg" alt="1"> -->
         </div>
 
         <div class="bottom-content">
@@ -124,13 +134,14 @@ onBeforeUnmount(() => {
                 <p v-if="is_record">정지</p>
                 <p v-else>녹음</p>
             </button>
-            <button class="play-button" @click="stream_record">
+            <button class="play-button" @click="stream_record" :disabled="is_playing">
                 <p v-if="is_playing" style="font-size: 20px;">재생 중..</p>
                 <p v-else>재생</p>
             </button>
 
         </div>
     </div>
+    <MessageBox ref="message_box"/>
 </template>
 
 <style scoped>
@@ -154,13 +165,13 @@ onBeforeUnmount(() => {
 }
 
 .top-content p {
-    font-size: 70px;
+    font-size: 130px;
     cursor: pointer;
 }
 
 .bottom-content {
     background-color: whitesmoke;
-    height: 40%;
+    height: 300%;
     display: flex;
     justify-content: space-evenly;
     align-items: center;
@@ -204,6 +215,11 @@ onBeforeUnmount(() => {
   cursor: pointer;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
   transition: transform 0.2s, background-color 0.2s;
+}
+
+.play-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }
 
 .play-button:hover {

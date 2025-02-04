@@ -1,16 +1,46 @@
-# Tauri + Vue + TypeScript
+# brain-train 
+## 기억력 향상 및 언어 치료 도움 SW
 
-This template should help get you started developing with Vue 3 and TypeScript in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+## 개요
+뇌병변장애로 언어 및 인지가 불편한분들을 위한 치료를 도와주는 프로그램이다. 
+`windows` 환경에서 동작하도록 `tauri`를 통해 `데스크톱` 애플리케이션으로 만들었다. 
+`rust`와 `Vue`를 공부할 겸 만든 프로젝트이다. 
+`tts` 크레이트를 직접 만들어 `Crates.io`에 배포하기도 하였다. 
+언어치료를 위해 `녹음` 기능과 텍스트를 누르면 음성으로 변화되는것이 특징이다. 
 
-## Recommended IDE Setup
+## 기능
+기능은 크게 아래와 같이 3가지이다. 
+-   낱말 퀴즈 
+-   단어 말하기 연습 
+-   단어 전체 보기 
 
-- [VS Code](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+## 어플리케이션 구조
+어플리케이션을 활용하는 사용자가 원하는 이미지와 텍스트를 추가할 수 있도록 
+`json`을 파싱하는 구조로 설계하였다. 
 
-## Type Support For `.vue` Imports in TS
+![alt text](image-1.png)
 
-Since TypeScript cannot handle type information for `.vue` imports, they are shimmed to be a generic Vue component type by default. In most cases this is fine if you don't really care about component prop types outside of templates. However, if you wish to get actual prop types in `.vue` imports (for example to get props validation when using manual `h(...)` calls), you can enable Volar's Take Over mode by following these steps:
+```rust
+{
+    "word_list" : [
+        { "word" : "바나나", "image" : "바나나.jpg"},
+        { "word" : "사과", "image" : "사과.jpg"},
+        { "word" : "오렌지", "image" : "오렌지.jpg"},
+        { "word" : "포도", "image" : "포도.jpg"},
+        { "word" : "딸기", "image" : "딸기.jpg"},
+        { "word" : "파인애플", "image" : "파인애플.jpg"},
+        { "word" : "수박", "image" : "수박.jpg"},
+        { "word" : "블루베리", "image" : "블루베리.jpg"}
+    ]
+}
+```
+위와 같이 json 파일에  `word`와 `image`를 원하는 단어명과 이미지 파일을 설정하면 커스텀이 가능하다. 
 
-1. Run `Extensions: Show Built-in Extensions` from VS Code's command palette, look for `TypeScript and JavaScript Language Features`, then right click and select `Disable (Workspace)`. By default, Take Over mode will enable itself if the default TypeScript extension is disabled.
-2. Reload the VS Code window by running `Developer: Reload Window` from the command palette.
+![alt text](image-2.png)
 
-You can learn more about Take Over mode [here](https://github.com/johnsoncodehk/volar/discussions/471).
+위와 같이 이미지파일을 `images` 폴더에 넣어주기만 하면 된다. 
+
+### 낱말 퀴즈 
+
+![alt text](image.png)
+

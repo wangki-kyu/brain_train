@@ -5,18 +5,19 @@ import { useRouter } from "vue-router";
 import MessageBox from './MessageBox.vue';
 
 const messageBox = ref();
-const idDev = ref(import.meta.env.MODE === 'development');
+// const idDev = ref(import.meta.env.MODE === 'development');
 
-interface WordProblem {
-  problem : string,
-  problem_images : string[]
-}
+// interface WordProblem {
+//   problem : string,
+//   problem_images : string[]
+// }
 
-let word_problem = ref<WordProblem | null>(null);
+// let word_problem = ref<WordProblem | null>(null);
 const image_path = ref<string>("");
 const router = useRouter();
 const word_quiz_menu_toggle = ref(false);
 const void_record_menu_toggle = ref(false);
+const word_view_toggle = ref(false);
 
 function toggle_word_quiz_menu() {
   word_quiz_menu_toggle.value = !word_quiz_menu_toggle.value;
@@ -26,40 +27,48 @@ function toggle_voice_record_menu() {
   void_record_menu_toggle.value = !void_record_menu_toggle.value;
 }
 
-const navigateTo = (path : string) => {
-  router.push(path);
+function word_view_menu() {
+  word_view_toggle.value = !word_view_toggle.value;
 }
+
+// const navigateTo = (path : string) => {
+//   router.push(path);
+// }
 
 const category = ref("fruit");
 
-async function GetImage(target: string) {
-  word_problem.value = await invoke("get_words_from_file", { target : target });
-}
+// async function GetImage(target: string) {
+//   word_problem.value = await invoke("get_words_from_file", { target : target });
+// }
 
 async function GetImagePath(target: string) {
   image_path.value = await invoke("get_file_env", { target: target});
 }
 
-async function ImageClickEvnetHandler(image_path : string | undefined) {
-  const answer = image_path?.split('.')[0];
-  if (answer === word_problem.value?.problem) {
-    showAlert('정답여부', '정답입니다.\r\n다음 문제로 넘어갑니다.');
-    GetImage(category.value);
-  } else {
-    showAlert('정답여부', '틀렸습니다.\r\n다시 시도하세요');
-  }
-}
+// async function ImageClickEvnetHandler(image_path : string | undefined) {
+//   const answer = image_path?.split('.')[0];
+//   if (answer === word_problem.value?.problem) {
+//     showAlert('정답여부', '정답입니다.\r\n다음 문제로 넘어갑니다.');
+//     GetImage(category.value);
+//   } else {
+//     showAlert('정답여부', '틀렸습니다.\r\n다시 시도하세요');
+//   }
+// }
 
-function showAlert(title: string, message: string) {
-  console.log(messageBox.value);
-  messageBox.value?.show_alert(title, message);
-}
+// function showAlert(title: string, message: string) {
+//   console.log(messageBox.value);
+//   messageBox.value?.show_alert(title, message);
+// }
 
 function change_category(path : string,text : string) {
   console.log(`change_category clicked, {text}`);
   console.log(text);
   category.value = text;
   router.push({ path: `/${path}/${text}`});
+}
+
+function go_router(path: string) {
+  router.push({path: path});
 }
 
 GetImagePath(category.value);
@@ -89,6 +98,13 @@ GetImagePath(category.value);
         <div v-if="void_record_menu_toggle" class="sub-menu">
           <p @click="change_category('VoiceRecord', 'fruit')">과일</p>
           <p @click="change_category('VoiceRecord', 'family')">가족</p>
+          <!-- <p @click="change_category('VoiceRecord', '한글')">한글</p> -->
+        </div>
+        <div class="side-menu-element" @click="word_view_menu">
+          <p>단어 전체 보기</p>
+        </div>
+        <div v-if="word_view_toggle" class="sub-menu">
+          <p @click="go_router('/WordView')">단어 전체 보기</p>
           <!-- <p @click="change_category('VoiceRecord', '한글')">한글</p> -->
         </div>
       </div>

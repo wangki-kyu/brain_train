@@ -26,3 +26,4 @@ rand = "*"
 cpal = "*"
 tokio = { version = "1.43.0", features = ["full"] }
 windows_tts = { path = "d:/work/rust/windows_tts"}
+base64 = "*"

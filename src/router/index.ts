@@ -1,6 +1,7 @@
 import { createWebHistory, createRouter, RouteRecordRaw } from "vue-router";
 import WordQuiz from "@/WordQuiz.vue";
 import VoiceRecord from "@/VoiceRecord.vue";
+import WordView from "@/WordView.vue";
 
 const routes: RouteRecordRaw[] = [
     {
@@ -12,6 +13,11 @@ const routes: RouteRecordRaw[] = [
         path : "/VoiceRecord/:category+",
         name: "VoiceRecord",
         component: VoiceRecord,
+    },
+    {
+        path : "/WordView",
+        name: "WordView",
+        component: WordView,
     },
 ]
 

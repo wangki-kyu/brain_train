@@ -10,7 +10,8 @@ const messageBox = ref();
 
 interface WordProblem {
   problem : string,
-  problem_images : string[]
+  problem_images : string[],
+  answer_list : string[]
 }
 
 let word_problem = ref<WordProblem | null>(null);
@@ -30,12 +31,13 @@ async function GetImagePath(target: string) {
 }
 
 async function ImageClickEvnetHandler(image_path : string | undefined) {
-  const answer = image_path?.split('.')[0];
+  // const answer = image_path?.split('.')[0];
+  const answer = image_path;
   if (answer === word_problem.value?.problem) {
-    showAlert('정답여부', '정답입니다.\r\n다음 문제로 넘어갑니다.');
+    // showAlert('정답여부', '정답입니다.\r\n다음 문제로 넘어갑니다.');
     GetImage(category.value);
   } else {
-    showAlert('정답여부', '틀렸습니다.\r\n다시 시도하세요');
+    // showAlert('정답여부', '틀렸습니다.\r\n다시 시도하세요');
   }
 }
 
@@ -48,16 +50,43 @@ watch(
   }
 );
 
+async function loadImageAsBase64(imagePath: string): Promise<string> {
+  const response = await fetch(imagePath);
+  const blob = await response.blob();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
 function showAlert(title: string, message: string) {
   console.log(messageBox.value);
   messageBox.value?.show_alert(title, message);
 }
 
-function change_category(text : string) {
-  category.value = text;
-  GetImagePath(category.value);
+async function speak_tts(text: string | undefined) {
+    await invoke("speak_tts", { text: text});
 }
 
+//function change_category(text : string) {
+//  category.value = text;
+// 
+ // GetImagePath(category.value);
+//}
+
+const test_image_path = ref("");
+
+async function test_func() {
+  try {
+    // test_image_path.value = await invoke("get_image_url");
+    test_image_path.value = await loadImageAsBase64("D:\\work\\rust\\brain-train\\src-tauri\\target\\release\\images\\family\\김우준.jpg");
+    console.log(test_image_path.value);  
+  } catch (error) {
+    
+  }
+}
 
 onMounted(() => {
   GetImagePath(category.value);
@@ -70,24 +99,32 @@ onMounted(() => {
     <div class="container">
         <div class="top-panel">
             <button v-if="idDev" @click="showAlert('알림', '테스트')">Test</button>
-            <button v-if="idDev" @click="change_category('family')">Content</button>
+            <button v-if="idDev" @click="test_func">Content</button>
             <button @click="GetImage(category)">다음</button>
         </div>
 
         <div class="main-panel">
             <div class="image-container">
-                <img :src="image_path + word_problem?.problem_images[0]" alt="image"
-                    @click="ImageClickEvnetHandler(word_problem?.problem_images[0])">
+                <img :src="word_problem?.problem_images[0]" alt="image"
+                    @click="ImageClickEvnetHandler(word_problem?.answer_list[0])">
             </div>
             <div class="image-container">
-                <img :src="image_path + word_problem?.problem_images[1]" alt="image"
+                <img :src="word_problem?.problem_images[1]" alt="image"
+                    @click="ImageClickEvnetHandler(word_problem?.answer_list[1])">
+            </div>
+            <!-- <div class="image-container">
+                <img src="D:\work\rust\brain-train\src-tauri\target\release\images\family\김우준.jpg" alt="image"
                     @click="ImageClickEvnetHandler(word_problem?.problem_images[1])">
             </div>
+            <div class="image-container">
+                <img :src="test_image_path" alt="image"
+                    @click="ImageClickEvnetHandler(word_problem?.problem_images[1])">
+            </div> -->
         </div>
 
         <!-- bottom panel -->
         <div class="bottom-panel">
-            <p>{{ word_problem?.problem }}</p>
+            <p @click="speak_tts(word_problem?.problem)">{{ word_problem?.problem }}</p>
         </div>
 
         <MessageBox ref="messageBox"/>
@@ -155,8 +192,9 @@ onMounted(() => {
 .image-container img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   cursor: pointer;
+  aspect-ratio: 16/9;
 }
 
 .bottom-panel {
@@ -169,5 +207,6 @@ onMounted(() => {
 
 .bottom-panel p {
   font-size: 70px;
+  cursor: pointer;
 }
 </style>

@@ -1,6 +1,7 @@
-use std::{clone, fmt::format, sync::{RwLock}};
+use std::{clone, fmt::format, io::Read, sync::RwLock};
 
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use tauri::{ipc::private::ResponseKind, utils::config};
 use rand::{seq::SliceRandom, Rng};
 
@@ -16,10 +17,12 @@ use tokio::sync::mpsc;
 // tts
 use windows_tts::tts::tts;
 
+use base64::{engine::general_purpose::STANDARD, Engine};
+
 
 // static lazy 형태로 가지고 있어야 할듯함 
-static AUDIO_DATA: LazyLock<Arc<Mutex<Vec<f32>>>> = LazyLock::new(|| {
-    Arc::new(Mutex::new(Vec::new()))
+static AUDIO_DATA: LazyLock<Mutex<Vec<f32>>> = LazyLock::new(|| {
+    Mutex::new(Vec::new())
 });
 
 #[derive(Clone)]
@@ -29,8 +32,8 @@ struct RecordData {
 
 unsafe impl Send for RecordData {}
 
-static RECORD_DATA: LazyLock<Arc<Mutex<RecordData>>> = LazyLock::new(|| {
-    Arc::new(Mutex::new(RecordData { stream : Arc::new(Mutex::new(None))}))
+static RECORD_DATA: LazyLock<Mutex<RecordData>> = LazyLock::new(|| {
+    Mutex::new(RecordData { stream : Arc::new(Mutex::new(None))})
 });
 
 
@@ -47,7 +50,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             greet, get_words_from_file,get_file_env, get_record_json_data 
             ,start_record, pause_record, // 녹음 시작, 녹음 중지
-            test_func, stream_record, speak_tts
+            test_func, stream_record, speak_tts, async_test, get_random_word
             ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -68,7 +71,8 @@ struct WordGameContainer {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct WordProblem {
     problem : String,
-    problem_images : Vec<String>
+    problem_images : Vec<String>,
+    answer_list : Vec<String>
 }
 
 // 매개변수로 낱말인지 뭔지를 받아와야할듯,,?
@@ -80,16 +84,20 @@ fn get_words_from_file(target : String) -> WordProblem{
     println!("get_words_from_file called , {}", target);
 
     let mut data = String::new();
+    let mut img_path = String::new();
+    let mut path = String::new();
     #[cfg(debug_assertions)]
     {
-        let path = format!("./assets/{}.json", target);
+        path = format!("./assets/{}.json", target);
         data = std::fs::read_to_string(path.as_str()).expect("fail");
+        img_path = format!("./assets/images/{}", target);
     }
 
     #[cfg(not(debug_assertions))]
     {
-        let path = format!("{}.json", target);
+        path = format!("{}.json", target);
         data = std::fs::read_to_string(path.as_str()).expect("fail");
+        img_path = format!("images/{}", target);
     }
     
     let word_game_container: WordGameContainer = serde_json::from_str(&data).expect("fail");
@@ -104,11 +112,23 @@ fn get_words_from_file(target : String) -> WordProblem{
 
     println!("choose problem : {:?}", problem);
 
-    let image_list : Vec<String> = choosen_word.iter().map(|w| w.image.clone() ).collect();
+    let answer_list = choosen_word.iter().map(|w| w.word.clone()).collect();
 
-    println!("image_list : {:?}", image_list);
+    // 골라진 이미지를 읽는다. 
+    // base64로 인코딩한다.
+    // Vec<String>으로 저장한다.
+    // 넘겨준다. 
+    // front에서 읽은 후 곧바로 넣어준다. 
+    let image_list : Vec<String> = choosen_word.iter()
+        .map(|w| {
+            let data_path = format!("{}/{}", img_path, w.image.clone());
+            get_image_url(data_path.as_str()).unwrap()
+        } ).collect();
 
-    let word_problem = WordProblem { problem : problem.word.clone(), problem_images : image_list};
+
+    // println!("image_list : {:?}", image_list);
+
+    let word_problem = WordProblem { problem : problem.word.clone(), problem_images : image_list, answer_list : answer_list};
 
     word_problem
 }
@@ -123,12 +143,17 @@ fn get_file_env(target: String) -> String {
         path = format!("/src-tauri/assets/images/{}/", target);
         // path = "/src-tauri/assets/images/".to_string();
     }
+    
+    let exe_path = std::env::current_exe().unwrap();
+    let exe_dir = exe_path.parent().unwrap();
 
     #[cfg(not(debug_assertions))]
     {
         println!("릴리즈 모드입니다.");
-        path = format!("./images/{}/", target);
-        // path = "./images/".to_string();
+        let dir = exe_dir.to_string_lossy().into_owned();
+        path = format!("{}\\images\\{}\\",dir, target);
+        // path = path.as_str().replace("\\", "/");
+        // path = format!("\\images\\{}\\", target);
     }
 
     // let path = std::env::current_exe().unwrap().to_string_lossy().to_string();
@@ -175,10 +200,9 @@ fn start_record() {
     let host = cpal::default_host();
     let device = host.default_input_device().unwrap();
     let config = device.default_input_config().unwrap();
-    let record_audio_data_clone = Arc::clone(&AUDIO_DATA);
     
     {
-        record_audio_data_clone.lock().unwrap().clear();
+        AUDIO_DATA.lock().unwrap().clear();
     }
 
     let record_data = RECORD_DATA.lock().unwrap();
@@ -188,7 +212,7 @@ fn start_record() {
     *stream_clone = Some(device.build_input_stream(
         &config.config(), 
         move |data: &[f32], _: &cpal::InputCallbackInfo| {
-            let mut record_audio_vec = record_audio_data_clone.lock().unwrap();
+            let mut record_audio_vec = AUDIO_DATA.lock().unwrap();
             for &sample in data.iter() {
                 record_audio_vec.push(sample);
             }
@@ -219,13 +243,12 @@ fn pause_record() {
 }
 
 #[tauri::command]
-fn stream_record() -> Result<(), String> {
+async fn stream_record() -> Result<(), String> {
     let host = cpal::default_host();
     let device = host.default_output_device().unwrap();
     let config = device.default_output_config().unwrap();
 
-    let recorded_data_clone = AUDIO_DATA.clone();
-    let audio_data = recorded_data_clone.lock().unwrap().clone();
+    let audio_data = AUDIO_DATA.lock().unwrap().clone();
     let mut audio_data_iter = audio_data.into_iter();
 
     if audio_data_iter.len() == 0 {
@@ -283,6 +306,52 @@ fn test_func() {
 }
 
 #[tauri::command]
-fn speak_tts(text : String) {
+async fn speak_tts(text : String) {
     tts(text.as_str());
+}
+
+#[tauri::command]
+async fn async_test() -> String{
+    tokio::time::sleep(Duration::from_secs(3)).await;
+    "비동기 작업 완료".to_string()
+}
+
+fn get_image_url(path: &str) -> Result<String, String>{
+    let mut file = std::fs::File::open(path).map_err(|e| e.to_string())?;
+    let mut buffer: Vec<u8>= Vec::new();
+    file.read_to_end(&mut buffer).map_err(|e| e.to_string())?;
+
+    let encoded = STANDARD.encode(&buffer);
+    Ok(format!("data:image/jpg;base64,{}", encoded))
+}
+
+#[tauri::command]
+fn get_random_word() -> Vec<String> {
+    let mut path = String::new();
+    let mut data = String::new();
+    #[cfg(debug_assertions)]
+    {
+        path = "./assets/word_view.json".to_string();
+        data = std::fs::read_to_string(path.as_str()).expect("fail");
+    }
+
+    #[cfg(not(debug_assertions))]
+    {
+        path = "word_view.json".to_string();
+        data = std::fs::read_to_string(path.as_str()).expect("fail");
+    }
+    
+    let json: Value = serde_json::from_str(&data).expect("fail");
+    let word_list: Vec<String> = json["word_view"]
+        .as_array()
+        .expect("word_view is not a array")
+        .iter()
+        .map(|v| v.as_str().expect("not a string").to_string())
+        .collect();
+
+    let mut rng = rand::thread_rng();
+
+    let choosen_word_list: Vec<String> = word_list.choose_multiple(&mut rng, 9).map(|s| s.into()).collect();
+
+    choosen_word_list
 }
